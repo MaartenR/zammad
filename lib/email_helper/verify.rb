@@ -66,7 +66,7 @@ or
         result[:source] = 'outbound'
         return result
       end
-
+      
       # validate adapter
       adapter = params[:inbound][:adapter].downcase
       if !EmailHelper.available_driver[:inbound][adapter.to_sym]
@@ -86,9 +86,18 @@ or
         begin
           require "channel/driver/#{adapter.to_filename}"
 
+          Rails.logger.debug "verifying inbound driver #{adapter.to_classname}"
           driver_class    = Object.const_get("Channel::Driver::#{adapter.to_classname}")
           driver_instance = driver_class.new
-          fetch_result    = driver_instance.fetch(params[:inbound][:options], self, 'verify', subject)
+          if driver_instance.fetchable?(nil)
+            fetch_result    = driver_instance.fetch(params[:inbound][:options], self, 'verify', subject)
+          else
+            fetch_result = {
+              result: 'ok',
+              source: 'inbound',
+              subject: subject,
+            }
+          end
         rescue => e
           result = {
             result: 'invalid',

@@ -1,6 +1,6 @@
 # Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
 
-class Channel::Driver::Smtp
+class Channel::Driver::Smtp < Channel::EmailParser
 
 =begin
 
@@ -20,6 +20,62 @@ class Channel::Driver::Smtp
   )
 
 =end
+  
+  class SmtpListener < MidiSmtpServer::Smtpd
+    def initialize(port, driver_instance)
+      super(port, '0.0.0.0', 4, { auth_mode: :AUTH_FORBIDDEN })
+      @driver_instance = driver_instance
+    end
+    
+    def start
+      Rails.logger.debug "Starting smtp server listening on port #{@port}"
+      super
+    end
+    
+    def on_message_data_event(ctx)
+      @driver_instance.messageReceived(ctx[:message][:data], @port)
+    end
+    
+    def port
+      @port
+    end
+  end
+  
+  def listen(channel)
+    @channel = channel
+    port = @channel.options[:inbound][:options][:port].to_i
+    
+    self.shutdown
+    if (1..65535) === port
+      @server = SmtpListener.new(port, self)
+      @server.start
+    else
+      raise "Cannot listen on port #{port}. Port is invalid."
+    end
+  end
+  
+  def shutdown
+    unless @server.nil? || @server.stopped?
+      # Attempt to allow connections to close gracefully
+      @server.shutdown
+      sleep 2 unless @server.connections == 0
+      
+      Rails.logger.debug "Stopping smtp server listening on port #{@server.port}"
+      # stop all threads and connections
+      @server.stop
+      
+      logger.debug
+    end
+  end
+  
+  def fetchable?(channel)
+    false
+  end
+  
+  def messageReceived(message, port)
+    Rails.logger.debug "Processing message for channel with id #{@channel.id} received on port #{port}"
+    process(@channel, message, false)
+  end
 
   def send(options, attr, notification = false)
 
