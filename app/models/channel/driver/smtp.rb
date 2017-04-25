@@ -20,59 +20,61 @@ class Channel::Driver::Smtp < Channel::EmailParser
   )
 
 =end
-  
+
   class SmtpListener < MidiSmtpServer::Smtpd
+    attr_reader :port
+
     def initialize(port, driver_instance)
       super(port, '0.0.0.0', 4, { auth_mode: :AUTH_FORBIDDEN })
       @driver_instance = driver_instance
     end
-    
+
     def start
       Rails.logger.debug "Starting smtp server listening on port #{@port}"
       super
     end
-    
+
     def on_message_data_event(ctx)
-      @driver_instance.messageReceived(ctx[:message][:data], @port)
+      @driver_instance.message_received(ctx[:message][:data], @port)
     end
-    
+
     def port
       @port
     end
   end
-  
+
   def listen(channel)
     @channel = channel
     port = @channel.options[:inbound][:options][:port].to_i
-    
-    self.shutdown
-    if (1..65535) === port
+
+    shutdown
+    if (1..65_535).include?(port)
       @server = SmtpListener.new(port, self)
       @server.start
     else
       raise "Cannot listen on port #{port}. Port is invalid."
     end
   end
-  
+
   def shutdown
     unless @server.nil? || @server.stopped?
       # Attempt to allow connections to close gracefully
       @server.shutdown
-      sleep 2 unless @server.connections == 0
-      
+      sleep 2 unless @server.connections.zero?
+
       Rails.logger.debug "Stopping smtp server listening on port #{@server.port}"
       # stop all threads and connections
       @server.stop
-      
+
       logger.debug
     end
   end
-  
-  def fetchable?(channel)
+
+  def fetchable?(_channel)
     false
   end
-  
-  def messageReceived(message, port)
+
+  def message_received(message, port)
     Rails.logger.debug "Processing message for channel with id #{@channel.id} received on port #{port}"
     process(@channel, message, false)
   end

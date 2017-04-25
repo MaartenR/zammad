@@ -228,10 +228,9 @@ returns on fail
         driver_class    = Object.const_get("Channel::Driver::#{adapter.to_classname}")
         driver_instance = driver_class.new
         if driver_instance.fetchable?(nil)
-          Rails.logger.debug "Driver is fetchable, check fetch"
-          result_inbound  = driver_instance.fetch(params[:options], nil, 'check')
+          result_inbound = driver_instance.fetch(params[:options], nil, 'check')
         else
-          result_inbound = 
+          result_inbound =
             {
               result: 'ok',
               notice: ''
