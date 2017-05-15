@@ -171,6 +171,7 @@ class Scheduler < ApplicationModel
   def self._start_job(job, try_count = 0, try_run_time = Time.zone.now)
     job.last_run = Time.zone.now
     job.pid      = Thread.current.object_id
+    job.status   = 'ok'
     job.save
     logger.info "execute #{job.method} (try_count #{try_count})..."
     eval job.method() # rubocop:disable Lint/Eval
@@ -197,7 +198,11 @@ class Scheduler < ApplicationModel
     if try_run_max > try_count
       _start_job(job, try_count, try_run_time)
     else
-      raise "STOP thread for #{job.method} after #{try_count} tries (#{e.inspect})"
+      error = "Failed to run #{job.method} after #{try_count} tries #{e.inspect}"
+      logger.error error
+      job.error_message = error
+      job.status = 'error'
+      job.save
     end
   end
 
