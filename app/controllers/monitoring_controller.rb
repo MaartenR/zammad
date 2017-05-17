@@ -170,6 +170,22 @@ curl http://localhost/api/v1/monitoring/status?token=XXX
     render json: result, status: :created
   end
 
+  def restart_dead_jobs
+    access_check
+
+    count = 0
+    Scheduler.where(status: 'error').where(active: false).each { |scheduler|
+      scheduler.active = true
+      scheduler.save
+      count += 1
+    }
+
+    result = {
+      job_restart_count: count
+    }
+    render json: result
+  end
+
   private
 
   def token_or_permission_check
