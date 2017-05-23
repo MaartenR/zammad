@@ -47,6 +47,8 @@ returns
   def self.get(url, params = {}, options = {}, count = 10)
     uri  = URI.parse(url)
     http = get_http(uri, options)
+    Rails.logger.info "URI: #{uri}"
+    Rails.logger.info "GET http: #{http}"
 
     # prepare request
     request = Net::HTTP::Get.new(uri, { 'User-Agent' => 'Zammad User Agent' })

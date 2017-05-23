@@ -398,6 +398,10 @@ class TicketsController < ApplicationController
   # GET /api/v1/tickets/search
   def search
 
+    logger.info "GET call to /api/v1/tickets/search"
+    logger.info "Parameters: #{params}"
+    logger.info "Query: #{params[:query]}"
+
     # permit nested conditions
     if params[:condition]
       params.require(:condition).permit!

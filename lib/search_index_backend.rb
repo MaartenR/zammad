@@ -203,6 +203,8 @@ return search result
       query += '*'
     end
 
+    Rails.logger.info "Query: #{query}"
+
     # real search condition
     condition = {
       'query_string' => {
@@ -212,7 +214,7 @@ return search result
     data['query']['bool']['must'].push condition
 
     Rails.logger.info "# curl -X POST \"#{url}\" \\"
-    Rails.logger.debug " -d'#{data.to_json}'"
+    Rails.logger.info " -d'#{data.to_json}'"
 
     response = UserAgent.get(
       url,

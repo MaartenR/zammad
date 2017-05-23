@@ -94,10 +94,13 @@ returns
     limit        = params[:limit] || 12
     current_user = params[:current_user]
     full         = false
+    logger.info "Actual query: #{query}"
     if params[:full] || !params.key?(:full)
       full = true
     end
 
+    logger.info "Search index backend enabled: #{SearchIndexBackend.enabled?}"
+    logger.info "Condition: #{condition}"
     # try search index backend
     if !condition && SearchIndexBackend.enabled?
       query_extention = {}
